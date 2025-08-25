@@ -1,0 +1,867 @@
+openapi: 3.0.0
+info:
+  title: Portfolio API
+  version: 1.0.0
+  description: The Portfolio API enables core functionalities for a personal or professional portfolio platform. It includes secure user authentication, project and category management, skill and certificate tracking, and a contact form endpoint for visitors to get in touch. This API is structured following RESTful principles and supports file uploads via multipart/form-data where required.
+servers:
+  - url: http://localhost:3001/api
+
+paths:
+  /auth/login:
+    post:
+      summary: Login user
+      description: Authenticate a user and return an access token upon successful login.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+        "401":
+          description: Invalid email or password
+        "500":
+          description: Internal server error
+
+  /auth/is-auth:
+    get:
+      summary: Check authentication status
+      description: |
+        Checks whether the current user is authenticated.
+        Protected by middleware that validates the JWT token (via HTTP-only cookie or Authorization header).
+        Returns user ID if authenticated.
+      tags: [Auth]
+      responses:
+        "200":
+          description: User is authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User is already authenticated!
+                  user:
+                    type: string
+                    example: user-id-12345
+        "401":
+          description: Unauthorized - Token missing or invalid
+        "500":
+          description: Internal server error
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      description: Logs out the currently authenticated user by destroying the session or token.
+      tags: [Auth]
+      responses:
+        "200":
+          description: Logout successful
+        "500":
+          description: Logout failed
+
+  /user:
+    get:
+      summary: Get all users
+      description: Retrieve a list of all users. If no users exist, a message is returned.
+      tags: [User]
+      responses:
+        "200":
+          description: List of users or message if none found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No user found!
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "user123"
+                        name:
+                          type: string
+                          example: John Doe
+                        email:
+                          type: string
+                          format: email
+                          example: johndoe@example.com
+                        profileUrl:
+                          type: string
+                          format: uri
+                          example: https://res.cloudinary.com/demo/image/upload/v123456/profile.jpg
+                        myCVUrl:
+                          type: string
+                          format: uri
+                          example: https://res.cloudinary.com/demo/image/upload/v123456/cv.pdf
+        "500":
+          description: Internal server error
+
+  /user/{id}:
+    get:
+      summary: Get user detail
+      description: Retrieve detailed information of a user by their ID.
+      tags: [User]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the user to retrieve
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Successfully to get user!
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: user123
+                      name:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        format: email
+                        example: johndoe@example.com
+                      profileUrl:
+                        type: string
+                        format: uri
+                        example: https://res.cloudinary.com/demo/image/upload/v123456/profile.jpg
+                      myCVUrl:
+                        type: string
+                        format: uri
+                        example: https://res.cloudinary.com/demo/image/upload/v123456/cv.pdf
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
+
+  /user/edit:
+    put:
+      summary: Edit user profile
+      description: Update user profile including name, optional profile image, and CV file.
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Updated name of the user
+                profile:
+                  type: string
+                  format: binary
+                  description: Optional profile image (JPG, JPEG, PNG, WEBP, max 2MB)
+                cv:
+                  type: string
+                  format: binary
+                  description: Optional CV file (PDF, max 2MB)
+      responses:
+        "200":
+          description: User updated successfully
+        "400":
+          description: Invalid profile image or CV file
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
+
+  /contact:
+    post:
+      summary: Send contact message
+      description: Sends a contact message to your email. Requires name, email, and message.
+      tags: [Contact]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - message
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+                message:
+                  type: string
+                  minLength: 10
+                  maxLength: 255
+                  example: Hello, I'm interested in your portfolio work.
+      responses:
+        "200":
+          description: Message sent successfully
+        "400":
+          description: Invalid input (e.g. message too short or too long)
+        "500":
+          description: Failed to send message
+
+  /projects:
+    get:
+      summary: Get all projects
+      description: Retrieve a list of all available projects.
+      tags: [Projects]
+      responses:
+        "200":
+          description: List of projects
+        "500":
+          description: Internal server error
+
+  /projects/create:
+    post:
+      summary: Create new project
+      description: Create a new project entry with title, description, category, image, and related skills.
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                categoryProjectId:
+                  type: string
+                skillId:
+                  type: array
+                  items:
+                    type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Project created
+        "400":
+          description: Invalid image or missing fields
+        "500":
+          description: Internal server error
+
+  /projects/{slug}:
+    get:
+      summary: Get project detail
+      description: Retrieve detailed information for a specific project by slug.
+      tags: [Projects]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project found
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /projects/edit/{slug}:
+    put:
+      summary: Edit project
+      description: Update an existing project identified by slug with new information.
+      tags: [Projects]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                categoryProjectId:
+                  type: string
+                skillId:
+                  type: array
+                  items:
+                    type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Project updated
+        "400":
+          description: Invalid image
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /projects/delete/{slug}:
+    delete:
+      summary: Delete a project
+      description: Delete a project by its slug. This will also delete the image from Cloudinary.
+      tags: [Projects]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+          description: Slug of the project to delete
+      responses:
+        "200":
+          description: Project deleted successfully
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /categories:
+    get:
+      summary: Get all categories
+      description: Retrieve a list of all categories.
+      tags: [Categories]
+      responses:
+        "200":
+          description: List of categories or empty array if none found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No project found!
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: category123
+                        name:
+                          type: string
+                          example: Frontend
+        "500":
+          description: Internal server error
+
+  /categories/create:
+    post:
+      summary: Create new category
+      description: Create a new category with a given name.
+      tags: [Categories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Backend
+      responses:
+        "201":
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: category123
+                      name:
+                        type: string
+                        example: Backend
+        "500":
+          description: Internal server error
+
+  /categories/edit/{id}:
+    put:
+      summary: Edit category
+      description: Update the name of an existing category by ID.
+      tags: [Categories]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Category ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Fullstack
+      responses:
+        "200":
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Update category successfully!
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: category123
+                      name:
+                        type: string
+                        example: Fullstack
+        "400":
+          description: Category not found
+        "500":
+          description: Internal server error
+
+  /categories/delete/{id}:
+    delete:
+      summary: Delete category
+      description: Delete a category by its ID.
+      tags: [Categories]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the category to delete
+      responses:
+        "200":
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Deleted categ
+
+  /certificates:
+    get:
+      summary: Get all certificates
+      description: Retrieve a list of all certificates.
+      tags: [Certificates]
+      responses:
+        "200":
+          description: List of certificates
+        "500":
+          description: Internal server error
+
+  /certificates/{id}:
+    get:
+      summary: Get certificate detail
+      description: Retrieve detailed information of a certificate by its ID.
+      tags: [Certificates]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the certificate to retrieve
+      responses:
+        "200":
+          description: Certificate found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Successfully to get certificate!
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: cert123
+                      title:
+                        type: string
+                        example: JavaScript Advanced Course
+                      certificateUrl:
+                        type: string
+                        format: uri
+                        example: https://res.cloudinary.com/demo/image/upload/v123456/certificate.png
+                      certificate_public_id:
+                        type: string
+                        example: certificates/abc123
+        "404":
+          description: Certificate not found
+        "500":
+          description: Internal server error
+
+  /certificates/create:
+    post:
+      summary: Create new certificate
+      description: Create a new certificate entry with title and image file.
+      tags: [Certificates]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Certificate created
+        "400":
+          description: Invalid image or missing fields
+        "500":
+          description: Internal server error
+
+  /certificates/edit/{id}:
+    put:
+      summary: Edit certificate
+      description: Update a certificate by its ID. Can optionally include a new image file.
+      tags: [Certificates]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Certificate updated successfully
+        "400":
+          description: Invalid image
+        "404":
+          description: Certificate not found
+        "500":
+          description: Internal server error
+
+  /certificates/delete/{id}:
+    delete:
+      summary: Delete a certificate
+      description: Delete a certificate and its associated image by ID.
+      tags: [Certificates]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Certificate deleted successfully
+        "404":
+          description: Certificate not found
+        "500":
+          description: Internal server error
+
+  /levels:
+    get:
+      summary: Get all levels
+      description: Retrieve a list of all levels.
+      tags: [Levels]
+      responses:
+        "200":
+          description: List of levels or empty array if none found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No level found!
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: level123
+                        name:
+                          type: string
+                          example: Beginner
+        "500":
+          description: Internal server error
+
+  /skills:
+    get:
+      summary: Get all skills
+      description: Retrieve a list of all skills and their associated levels.
+      tags: [Skills]
+      responses:
+        "200":
+          description: List of skills
+        "404":
+          description: No skills found
+        "500":
+          description: Internal server error
+
+  /skills/{id}:
+    get:
+      summary: Get skill detail
+      description: Retrieve detailed information of a skill by its ID.
+      tags: [Skills]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the skill to retrieve
+      responses:
+        "200":
+          description: Skill found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Successfully to get skill!
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: skill123
+                      name:
+                        type: string
+                        example: React.js
+                      levelId:
+                        type: string
+                        example: level123
+                      iconUrl:
+                        type: string
+                        format: uri
+                        example: https://res.cloudinary.com/demo/image/upload/v123456/skill.png
+        "404":
+          description: Skill not found
+        "500":
+          description: Internal server error
+
+  /skills/create:
+    post:
+      summary: Add new skill
+      description: Create a new skill entry with icon and associated level.
+      tags: [Skills]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                levelId:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Skill added
+        "400":
+          description: Invalid or missing image
+        "500":
+          description: Internal server error
+
+  /skills/edit/{id}:
+    put:
+      summary: Edit skill
+      description: Update skill details and icon by skill ID.
+      tags: [Skills]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                levelId:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Skill updated
+        "400":
+          description: Invalid image
+        "404":
+          description: Skill not found
+        "500":
+          description: Internal server error
+
+  /skills/delete/{id}:
+    delete:
+      summary: Delete a skill
+      description: Permanently delete a skill by ID.
+      tags: [Skills]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Skill deleted
+        "404":
+          description: Skill not found
+        "500":
+          description: Internal server error
+
+tags:
+  - name: Auth
+    description: Authentication operations
+  - name: User
+    description: User profile operations
+  - name: Contact
+    description: Send contact message via email
+  - name: Projects
+    description: Project CRUD operations
+  - name: Categories
+    description: Category management
+  - name: Certificates
+    description: Certificate management (CRUD and image uploads)
+  - name: Skills
+    description: Skill management

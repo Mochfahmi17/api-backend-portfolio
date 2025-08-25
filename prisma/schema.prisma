@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  password          String
+  profileUrl        String?
+  profile_public_id String?
+  myCVUrl           String?
+  myCV_public_id    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
+
+model CategoryProject {
+  id        String    @id @default(cuid())
+  name      String
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("categoryProjects")
+}
+
+model Project {
+  id                String          @id @default(cuid())
+  title             String
+  slug              String          @unique
+  description       String
+  categoryProjectId String
+  categoryProject   CategoryProject @relation(fields: [categoryProjectId], references: [id], onDelete: Cascade)
+  imageUrl          String
+  image_pubic_id    String
+  linkDemo          String?
+  linkRepository    String?
+  skills            Skill[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("projects")
+}
+
+model Level {
+  id              String   @id @default(cuid())
+  name            String
+  competencyLevel Int
+  skills          Skill[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("levels")
+}
+
+model Skill {
+  id              String    @id @default(cuid())
+  name            String
+  levelId         String
+  experienceLevel Level     @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  iconUrl         String
+  icon_public_id  String
+  projects        Project[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("skills")
+}
+
+model Certificate {
+  id                    String   @id @default(cuid())
+  title                 String
+  certificateUrl        String
+  certificate_public_id String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("certificates")
+}
