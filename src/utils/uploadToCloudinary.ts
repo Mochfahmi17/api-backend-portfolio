@@ -30,10 +30,7 @@ export default async function uploadToCloudinary(file: File | Express.Multer.Fil
   }
 
   const options: UploadApiOptions = {
-    folder: `portfolio/${subFolder}`,
-    use_filename: true,
-    unique_filename: false,
-    overwrite: true,
+    folder: `portfolio/${subFolder}`
   };
 
   return new Promise((resolve, reject) => {
