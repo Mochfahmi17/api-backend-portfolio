@@ -48,7 +48,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      path: "/",
       maxAge: 5 * 60 * 60 * 1000,
     };
     res.cookie("accessToken", accessToken, cookieOption);
@@ -119,7 +118,6 @@ export const logout = (req: Request, res: Response, next: NextFunction) => {
   try {
     const cookieOption: CookieOptions = {
       httpOnly: true,
-      path: "/",
       secure: true,
       sameSite: "none",
     };
